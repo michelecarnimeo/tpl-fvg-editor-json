@@ -1,14 +1,18 @@
 # TPL FVG Editor JSON
 
-Web app React + Vite per leggere, modificare e salvare file JSON del tabellario TPL.
+Editor JSON desktop per gestire linee, fermate, prezzi e codici del tabellario TPL FVG.
+
+All'avvio l'app chiede se vuoi caricare un file JSON esistente oppure crearne uno nuovo.
 
 ## Funzionalita
 
-- Upload di un file JSON
+- Caricamento di un file JSON dal computer
+- Creazione di un nuovo file da zero
 - Editor guidato per linee e fermate
-- Modifica matrici prezzi e codici (cell-by-cell)
-- Validazione base della struttura
-- Download del nuovo `database.json`
+- Modifica delle matrici prezzi e codici cella per cella
+- Cancellazione e aggiunta di linee e fermate
+- Conferma di sicurezza prima di cancellare una linea
+- Download del file JSON aggiornato
 
 ## Avvio locale
 
@@ -26,4 +30,15 @@ npm run preview
 
 ## Deploy su Vercel
 
-Il progetto e statico e pronto per Vercel senza configurazioni speciali: importa il repository e usa il comando build `npm run build`.
+Il progetto e pronto per Vercel come app statica.
+
+Impostazioni consigliate:
+
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+## Note tecniche
+
+- Stack: React + Vite + TypeScript
+- Modalita: desktop only
+- Il file di esempio `database.json` serve come riferimento per la struttura dei dati
