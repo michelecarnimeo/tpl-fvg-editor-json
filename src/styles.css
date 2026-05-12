@@ -64,10 +64,11 @@ body {
 
 .hero {
 	padding: 1rem 1.2rem;
-	background: rgba(255, 255, 255, 0.72);
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(214, 236, 245, 0.5));
 	border: 1px solid rgba(255, 255, 255, 0.7);
 	border-radius: 14px;
 	backdrop-filter: blur(8px);
+	box-shadow: 0 12px 30px rgba(31, 41, 55, 0.08);
 }
 
 .hero h1 {
@@ -84,6 +85,7 @@ body {
 	border: 1px solid var(--line);
 	border-radius: 12px;
 	padding: 0.9rem;
+	box-shadow: 0 10px 24px rgba(31, 41, 55, 0.05);
 }
 
 .controls-grid {
@@ -120,10 +122,12 @@ button {
 	color: white;
 	border-color: transparent;
 	font-weight: 700;
+	transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
 button:hover {
 	transform: translateY(-1px);
+	box-shadow: 0 8px 18px rgba(11, 110, 116, 0.18);
 }
 
 button:disabled {
@@ -137,6 +141,44 @@ button:disabled {
 
 .status-panel {
 	border-left: 5px solid var(--ok);
+}
+
+.hero-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-top: 0.85rem;
+}
+
+.hero-badges span {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.35rem 0.65rem;
+	border-radius: 999px;
+	background: rgba(11, 110, 116, 0.08);
+	color: var(--accent);
+	font-size: 0.85rem;
+	font-weight: 700;
+}
+
+.draft-banner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	border-left: 5px solid var(--accent-2);
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 239, 228, 0.8));
+}
+
+.draft-banner p {
+	margin: 0.2rem 0 0;
+	color: #4b5563;
+}
+
+.draft-actions {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
 }
 
 .warning-list {
@@ -209,6 +251,73 @@ th {
 	font-size: 0.88rem;
 }
 
+.tablet-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+}
+
+.mobile-stack {
+	display: grid;
+	gap: 1rem;
+}
+
+.matrix-card-grid {
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.matrix-card {
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: #fff;
+	overflow: hidden;
+	box-shadow: 0 8px 18px rgba(31, 41, 55, 0.05);
+}
+
+.matrix-card header {
+	padding: 0.7rem 0.8rem;
+	background: #f9f7f1;
+	border-bottom: 1px solid #ece7db;
+	font-size: 0.92rem;
+}
+
+.matrix-card-cells {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+	gap: 0.45rem;
+	padding: 0.8rem;
+}
+
+.matrix-cell-card {
+	display: grid;
+	gap: 0.25rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: var(--accent);
+}
+
+.matrix-cell-card .cell-input {
+	min-width: 100%;
+	max-width: 100%;
+	width: 100%;
+}
+
+.app-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.9rem 1rem;
+	border-top: 1px solid var(--line);
+	color: #4b5563;
+	font-size: 0.9rem;
+	background: rgba(255, 254, 249, 0.94);
+	border-radius: 12px;
+	box-shadow: 0 8px 20px rgba(31, 41, 55, 0.04);
+}
+
 .start-screen {
 	max-width: 900px;
 	margin: 0 auto;
@@ -216,6 +325,7 @@ th {
 	display: flex;
 	flex-direction: column;
 	gap: 2rem;
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88));
 }
 
 .start-option {
@@ -247,7 +357,7 @@ th {
 .btn-large {
 	display: inline-block;
 	padding: 0.9rem 1.8rem;
-	background: var(--accent);
+	background: linear-gradient(135deg, var(--accent), #0f8b91);
 	color: white;
 	border: none;
 	border-radius: 0.4rem;
@@ -283,6 +393,10 @@ th {
 .btn-large:hover {
 	background: var(--accent);
 	color: white;
+}
+
+.file-input-large:hover {
+	box-shadow: 0 8px 18px rgba(11, 110, 116, 0.16);
 }
 
 .dialog-overlay {
@@ -384,9 +498,24 @@ th {
 	}
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
 	.hero h1 {
 		font-size: 1.4rem;
+	}
+
+	.hero-badges,
+	.draft-banner,
+	.app-footer {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.tablet-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.matrix-card-grid {
+		grid-template-columns: 1fr;
 	}
 
 	.stop-row {
@@ -415,5 +544,54 @@ th {
 
 	table {
 		min-width: 460px;
+	}
+}
+
+@media (max-width: 1280px) {
+	.app-container {
+		max-width: 920px;
+	}
+
+	.controls-grid {
+		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	}
+
+	.hero {
+		padding: 0.95rem 1rem;
+	}
+
+	.table-wrap {
+		max-width: 100%;
+	}
+
+	table {
+		min-width: 520px;
+	}
+}
+
+@media (max-width: 640px) {
+	.app-shell {
+		padding: 0.5rem;
+	}
+
+	.panel,
+	.hero,
+	.app-footer,
+	.start-screen {
+		border-radius: 10px;
+	}
+
+	.controls-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.file-input-large,
+	.btn-large,
+	button {
+		width: 100%;
+	}
+
+	.matrix-card-cells {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }

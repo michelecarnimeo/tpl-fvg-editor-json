@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import demoData from '../database.json'
+import EditorView from './editor/EditorView'
 
 type Line = {
   nome: string
@@ -14,165 +15,53 @@ type ValidationResult = {
   messages: string[]
 }
 
+type DraftData = {
+  data: Line[]
+  selectedLine: number
+  status: string
+}
+
+const STORAGE_KEY = 'tpl-fvg-editor-json-draft'
+
 function cloneData(source: Line[]): Line[] {
   return JSON.parse(JSON.stringify(source)) as Line[]
 }
 
-function normalizeLine(line: Line): Line {
-  const size = line.fermate.length
-  const normalizedPrezzi: number[][] = []
-  const normalizedCodici: string[][] = []
-
-  for (let r = 0; r < size; r += 1) {
-    normalizedPrezzi[r] = []
-    normalizedCodici[r] = []
-    for (let c = 0; c < size; c += 1) {
-      const price = line.prezzi?.[r]?.[c]
-      const code = line.codici?.[r]?.[c]
-      normalizedPrezzi[r][c] = Number.isFinite(price) ? Number(price) : 0
-      normalizedCodici[r][c] = typeof code === 'string' ? code : ''
-    }
-  }
-
-  return {
-    nome: line.nome,
-    fermate: [...line.fermate],
-    prezzi: normalizedPrezzi,
-    codici: normalizedCodici
-  }
-}
-
-function validateData(lines: Line[]): ValidationResult {
-  const messages: string[] = []
-  if (!Array.isArray(lines) || lines.length === 0) {
-    return { ok: false, messages: ['Il file deve contenere almeno una linea.'] }
-  }
-
-  lines.forEach((line, lineIndex) => {
-    if (!line.nome || typeof line.nome !== 'string') {
-      messages.push(`Linea #${lineIndex + 1}: nome mancante o non valido.`)
-    }
-    if (!Array.isArray(line.fermate) || line.fermate.length === 0) {
-      messages.push(`Linea #${lineIndex + 1}: fermate mancanti.`)
-      return
-    }
-
-    const size = line.fermate.length
-    if (!Array.isArray(line.prezzi) || line.prezzi.length !== size) {
-      messages.push(`Linea #${lineIndex + 1}: matrice prezzi non quadrata.`)
-    }
-    if (!Array.isArray(line.codici) || line.codici.length !== size) {
-      messages.push(`Linea #${lineIndex + 1}: matrice codici non quadrata.`)
-    }
-  })
-
-  return { ok: messages.length === 0, messages }
-}
-
-export default function App() {
-  const [mode, setMode] = useState<'start' | 'editor'>('start')
-  const [data, setData] = useState<Line[] | null>(null)
-  const [selectedLine, setSelectedLine] = useState(0)
-  const [status, setStatus] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [confirmDialog, setConfirmDialog] = useState<{ show: boolean; lineIndex: number; lineName: string } | null>(null)
-
-  const current = data ? data[selectedLine] : undefined
-
-  const validation = useMemo(() => {
-    if (!data) return { ok: true, messages: [] }
-    return validateData(data)
-  }, [data])
-
-  function withCurrentLine(mutator: (line: Line) => Line) {
-    setData((prev) => {
-      const next = cloneData(prev)
-      next[selectedLine] = mutator(next[selectedLine])
-      return next
-    })
-  }
-
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result)) as Line[]
-        if (!Array.isArray(parsed)) {
-          throw new Error('La radice JSON deve essere un array di linee.')
-        }
-
-        const normalized = parsed.map((line) => normalizeLine(line))
-        setData(normalized)
-        setSelectedLine(0)
-        setStatus(`File caricato: ${file.name}`)
-        setError(null)
-        setMode('editor')
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Errore di lettura file JSON.'
-        setError(`JSON non valido: ${message}`)
-      }
-    }
-    reader.readAsText(file)
-  }
-
-  function createNew() {
-    const newData: Line[] = [
-      {
-        nome: 'Nuova linea',
-        fermate: ['Fermata 1', 'Fermata 2'],
-        prezzi: [[0, 2.5], [2.5, 0]],
-        codici: [['', 'E1'], ['E1', '']]
-      }
-    ]
-    setData(newData)
-    setSelectedLine(0)
-    setStatus('Nuovo file creato. Inizia a modificare i dati.')
-    setError(null)
-    setMode('editor')
-  }
-
-  function loadDemo() {
-    const demoNormalized = cloneData(demoData as Line[]).map(normalizeLine)
-    setData(demoNormalized)
-    setSelectedLine(0)
-    setError(null)
-    setStatus('Modalita demo attivata. I dati sono di esempio.')
-    setMode('editor')
-  }
-
-  function goBack() {
-    setMode('start')
-    setStatus('')
-    setError(null)
-  }
-
-  function downloadJSON() {
-    if (!data) return
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'database.json'
-    a.click()
-    URL.revokeObjectURL(url)
-    setStatus('Download completato: database.json')
-  }
-
-  function addLine() {
-    if (!data) {
-      const firstLine: Line = {
-        nome: 'Nuova linea 1',
-        fermate: ['Nuova fermata'],
-        prezzi: [[0]],
-        codici: [['']]
-      }
-      setData([firstLine])
-      setSelectedLine(0)
-      setStatus('Creata prima linea vuota.')
-      return
+  return (
+    <div className="app-shell">
+      <div className="bg-shape bg-shape-a" />
+      <div className="bg-shape bg-shape-b" />
+      <div className="app-container">
+        <Analytics />
+        <EditorView
+          appVersion={appVersion}
+          data={data}
+          current={current}
+          selectedLine={selectedLine}
+          status={status}
+          error={error}
+          validation={validation}
+          confirmDialog={confirmDialog}
+          footerLabel={saveStatusBadge()}
+          actions={{
+            goBack,
+            downloadJSON,
+            addLine,
+            removeLine,
+            addStop,
+            removeStop,
+            updateStopName,
+            updatePrice,
+            updateCode,
+            setSelectedLine,
+            withCurrentLine,
+            confirmRemoveLine,
+            cancelRemoveLine
+          }}
+        />
+      </div>
+    </div>
+  )
     }
 
     const newLine: Line = {
@@ -273,9 +162,27 @@ export default function App() {
           <header className="hero">
             <h1>TPL FVG Editor JSON</h1>
             <p>Carica un file JSON da modificare oppure crea uno nuovo da zero.</p>
+            <div className="hero-badges">
+              <span>Desktop only</span>
+              <span>Salvataggio locale</span>
+              <span>Versione {appVersion}</span>
+            </div>
           </header>
 
           {error && <section className="panel error">{error}</section>}
+
+          {hasDraft && (
+            <section className="panel draft-banner">
+              <div>
+                <strong>Bozza trovata</strong>
+                <p>Puoi riprendere l'ultimo lavoro salvato in automatico.</p>
+              </div>
+              <div className="draft-actions">
+                <button type="button" onClick={restoreDraft}>Riprendi bozza</button>
+                <button type="button" className="danger" onClick={clearDraft}>Elimina bozza</button>
+              </div>
+            </section>
+          )}
 
           <section className="panel start-screen">
             <div className="start-option">
@@ -323,6 +230,7 @@ export default function App() {
   }
 
   return (
+<<<<<<< HEAD
     <>
       <Analytics />
       <div className="app-shell">
@@ -485,6 +393,38 @@ export default function App() {
           </div>
         )}
         </div>
+=======
+    <div className="app-shell">
+      <div className="bg-shape bg-shape-a" />
+      <div className="bg-shape bg-shape-b" />
+      <div className="app-container">
+        <EditorView
+          appVersion={appVersion}
+          data={data}
+          current={current}
+          selectedLine={selectedLine}
+          status={status}
+          error={error}
+          validation={validation}
+          confirmDialog={confirmDialog}
+          footerLabel={saveStatusBadge()}
+          actions={{
+            goBack,
+            downloadJSON,
+            addLine,
+            removeLine,
+            addStop,
+            removeStop,
+            updateStopName,
+            updatePrice,
+            updateCode,
+            setSelectedLine,
+            withCurrentLine,
+            confirmRemoveLine,
+            cancelRemoveLine
+          }}
+        />
+>>>>>>> 1784338 (0.7.0 - Versionamento e editor responsive modulare)
       </div>
     </>
   )
