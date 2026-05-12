@@ -1,0 +1,419 @@
+:root {
+	--bg-1: #f5efe4;
+	--bg-2: #d6ecf5;
+	--card: #fffef9;
+	--ink: #1f2937;
+	--accent: #0b6e74;
+	--accent-2: #e07a5f;
+	--line: #d7d3c6;
+	--ok: #166534;
+	--danger: #b91c1c;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+	color: var(--ink);
+	background: radial-gradient(circle at 20% 10%, var(--bg-2), transparent 48%),
+		linear-gradient(120deg, var(--bg-1), #f6f7f8 55%);
+}
+
+.app-shell {
+	position: relative;
+	min-height: 100vh;
+	padding: 0.75rem;
+}
+
+.bg-shape {
+	position: fixed;
+	z-index: 0;
+	pointer-events: none;
+	filter: blur(8px);
+}
+
+.bg-shape-a {
+	width: 280px;
+	height: 280px;
+	border-radius: 50%;
+	right: -90px;
+	top: -90px;
+	background: rgba(11, 110, 116, 0.2);
+}
+
+.bg-shape-b {
+	width: 240px;
+	height: 240px;
+	border-radius: 50%;
+	left: -80px;
+	bottom: -80px;
+	background: rgba(224, 122, 95, 0.2);
+}
+
+.app-container {
+	max-width: 1000px;
+	margin: 0 auto;
+	display: grid;
+	gap: 1rem;
+	position: relative;
+	z-index: 1;
+}
+
+.hero {
+	padding: 1rem 1.2rem;
+	background: rgba(255, 255, 255, 0.72);
+	border: 1px solid rgba(255, 255, 255, 0.7);
+	border-radius: 14px;
+	backdrop-filter: blur(8px);
+}
+
+.hero h1 {
+	margin: 0;
+	font-size: 1.8rem;
+}
+
+.hero p {
+	margin: 0.35rem 0 0;
+}
+
+.panel {
+	background: var(--card);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 0.9rem;
+}
+
+.controls-grid {
+	display: grid;
+	gap: 0.7rem;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.file-input {
+	display: grid;
+	gap: 0.4rem;
+	font-weight: 700;
+}
+
+label {
+	display: grid;
+	gap: 0.35rem;
+	margin-bottom: 0.55rem;
+	font-weight: 700;
+}
+
+input,
+select,
+button {
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	padding: 0.45rem 0.6rem;
+	font-size: 0.95rem;
+}
+
+button {
+	cursor: pointer;
+	background: linear-gradient(135deg, var(--accent), #0f8b91);
+	color: white;
+	border-color: transparent;
+	font-weight: 700;
+}
+
+button:hover {
+	transform: translateY(-1px);
+}
+
+button:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.danger {
+	background: linear-gradient(135deg, var(--danger), #dc2626);
+}
+
+.status-panel {
+	border-left: 5px solid var(--ok);
+}
+
+.warning-list {
+	margin: 0.6rem 0 0;
+	color: var(--danger);
+}
+
+.error {
+	margin-top: 0.6rem;
+	color: var(--danger);
+	font-weight: 700;
+}
+
+.stops-list {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.stop-row {
+	display: grid;
+	gap: 0.5rem;
+	grid-template-columns: 42px 1fr auto;
+	align-items: center;
+}
+
+.table-wrap {
+	overflow: auto;
+	max-width: 100%;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+}
+
+table {
+	width: max-content;
+	min-width: 560px;
+	border-collapse: collapse;
+	background: white;
+}
+
+th,
+td {
+	border: 1px solid #ece7db;
+	padding: 0.35rem;
+	text-align: center;
+	white-space: nowrap;
+}
+
+th {
+	background: #f9f7f1;
+}
+
+.cell-input {
+	min-width: 56px;
+	max-width: 56px;
+	padding: 0.32rem 0.35rem;
+	text-align: center;
+}
+
+.matrix-note {
+	margin-top: 0;
+	font-size: 0.9rem;
+	color: #4b5563;
+}
+
+.legend-grid {
+	margin-top: 0.7rem;
+	display: grid;
+	gap: 0.35rem;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	font-size: 0.88rem;
+}
+
+.start-screen {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 2.5rem;
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+}
+
+.start-option {
+	text-align: center;
+}
+
+.start-option h2 {
+	margin: 0 0 0.5rem 0;
+	color: var(--accent);
+	font-size: 1.3rem;
+}
+
+.start-option p {
+	margin: 0 0 1rem 0;
+	color: var(--ink);
+	font-size: 0.95rem;
+	line-height: 1.5;
+}
+
+.divider {
+	text-align: center;
+	color: #999;
+	font-size: 0.9rem;
+	font-weight: bold;
+	padding: 0.5rem 0;
+}
+
+.file-input-large,
+.btn-large {
+	display: inline-block;
+	padding: 0.9rem 1.8rem;
+	background: var(--accent);
+	color: white;
+	border: none;
+	border-radius: 0.4rem;
+	font-size: 1rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+
+.file-input-large {
+	position: relative;
+	overflow: hidden;
+}
+
+.file-input-large input[type="file"] {
+	position: absolute;
+	left: -9999px;
+	opacity: 0;
+}
+
+.file-input-large:hover,
+.btn-large:hover {
+	background: #094d51;
+}
+
+.btn-large {
+	border: 2px solid var(--accent);
+	background: transparent;
+	color: var(--accent);
+	font-weight: 600;
+}
+
+.btn-large:hover {
+	background: var(--accent);
+	color: white;
+}
+
+.dialog-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	animation: fadeIn 0.2s ease-out;
+}
+
+.dialog-content {
+	background: var(--card);
+	border: 2px solid var(--line);
+	border-radius: 0.6rem;
+	padding: 2rem;
+	max-width: 420px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+	animation: slideUp 0.3s ease-out;
+}
+
+.dialog-content h2 {
+	margin: 0 0 1rem 0;
+	color: var(--danger);
+	font-size: 1.3rem;
+}
+
+.dialog-content p {
+	margin: 0 0 0.8rem 0;
+	color: var(--ink);
+	line-height: 1.5;
+}
+
+.dialog-warning {
+	font-size: 0.9rem;
+	color: var(--danger);
+	font-style: italic;
+}
+
+.dialog-buttons {
+	display: flex;
+	gap: 1rem;
+	justify-content: flex-end;
+	margin-top: 1.5rem;
+}
+
+.btn-cancel,
+.btn-danger {
+	padding: 0.65rem 1.4rem;
+	border: none;
+	border-radius: 0.4rem;
+	font-size: 0.95rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.btn-cancel {
+	background: var(--line);
+	color: var(--ink);
+}
+
+.btn-cancel:hover {
+	background: #c0bbb0;
+}
+
+.btn-danger {
+	background: var(--danger);
+	color: white;
+}
+
+.btn-danger:hover {
+	background: #a01818;
+	box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slideUp {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@media (max-width: 768px) {
+	.hero h1 {
+		font-size: 1.4rem;
+	}
+
+	.stop-row {
+		grid-template-columns: 30px 1fr;
+	}
+
+	.stop-row .danger {
+		grid-column: 1 / -1;
+	}
+
+	.panel {
+		padding: 0.7rem;
+	}
+
+	th,
+	td {
+		padding: 0.22rem;
+		font-size: 0.8rem;
+	}
+
+	.cell-input {
+		min-width: 48px;
+		max-width: 48px;
+		font-size: 0.8rem;
+	}
+
+	table {
+		min-width: 460px;
+	}
+}
