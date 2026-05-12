@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import demoData from '../database.json'
 
 type Line = {
@@ -263,10 +264,12 @@ export default function App() {
 
   if (mode === 'start') {
     return (
-      <div className="app-shell">
-        <div className="bg-shape bg-shape-a" />
-        <div className="bg-shape bg-shape-b" />
-        <div className="app-container">
+      <>
+        <Analytics />
+        <div className="app-shell">
+          <div className="bg-shape bg-shape-a" />
+          <div className="bg-shape bg-shape-b" />
+          <div className="app-container">
           <header className="hero">
             <h1>TPL FVG Editor JSON</h1>
             <p>Carica un file JSON da modificare oppure crea uno nuovo da zero.</p>
@@ -304,20 +307,28 @@ export default function App() {
               </button>
             </div>
           </section>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   if (!current) {
-    return <div className="app-container">Nessuna linea disponibile.</div>
+    return (
+      <>
+        <Analytics />
+        <div className="app-container">Nessuna linea disponibile.</div>
+      </>
+    )
   }
 
   return (
-    <div className="app-shell">
-      <div className="bg-shape bg-shape-a" />
-      <div className="bg-shape bg-shape-b" />
-      <div className="app-container">
+    <>
+      <Analytics />
+      <div className="app-shell">
+        <div className="bg-shape bg-shape-a" />
+        <div className="bg-shape bg-shape-b" />
+        <div className="app-container">
         <header className="hero">
           <h1>TPL FVG Editor JSON</h1>
           <p>Editor guidato per fermate, prezzi e codici. Nessun tool tecnico richiesto.</p>
@@ -473,7 +484,8 @@ export default function App() {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
