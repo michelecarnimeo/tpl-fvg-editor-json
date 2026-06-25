@@ -11,7 +11,7 @@ type EditorActions = {
 	addStop: () => void
 	removeStop: (index: number) => void
 	updateStopName: (index: number, value: string) => void
-	updatePrice: (row: number, col: number, value: string) => void
+	updatePrice: (row: number, col: number, value: number) => void
 	updateCode: (row: number, col: number, value: string) => void
 	setSelectedLine: (value: number) => void
 	withCurrentLine: (mutator: (line: Line) => Line) => void
@@ -110,16 +110,11 @@ function StatusPanel({ status, error, validation }: Pick<EditorViewProps, 'statu
 	)
 }
 
-function ActionBar({ actions, canDeleteLine }: { actions: EditorActions; canDeleteLine: boolean }) {
+function ActionBar({ actions }: { actions: EditorActions }) {
 	return (
 		<section className="panel controls-grid">
 			<button type="button" onClick={actions.goBack}>↶ Indietro</button>
 			<button type="button" onClick={actions.downloadJSON}>Scarica JSON</button>
-			<button type="button" onClick={actions.addLine}>Aggiungi linea</button>
-			<button type="button" onClick={actions.addStop}>Aggiungi fermata</button>
-			<button type="button" className="danger" onClick={actions.removeLine} disabled={!canDeleteLine}>
-				Cancella linea
-			</button>
 		</section>
 	)
 }
@@ -127,18 +122,25 @@ function ActionBar({ actions, canDeleteLine }: { actions: EditorActions; canDele
 function LineSelector({
 	data,
 	selectedLine,
+	canDeleteLine,
 	setSelectedLine,
-	withCurrentLine
+	withCurrentLine,
+	addLine,
+	removeLine
 }: {
 	data: Line[]
 	selectedLine: number
+	canDeleteLine: boolean
 	setSelectedLine: EditorActions['setSelectedLine']
 	withCurrentLine: EditorActions['withCurrentLine']
+	addLine: EditorActions['addLine']
+	removeLine: EditorActions['removeLine']
 }) {
 	return (
 		<section className="panel">
+			<h2>Linea</h2>
 			<label>
-				Linea
+				Seleziona
 				<select value={selectedLine} onChange={(e) => setSelectedLine(Number(e.target.value))}>
 					{data.map((line, idx) => (
 						<option key={`${line.nome}-${idx}`} value={idx}>{line.nome}</option>
@@ -149,16 +151,24 @@ function LineSelector({
 				Nome linea
 				<input value={data[selectedLine].nome} onChange={(e) => withCurrentLine((line) => ({ ...line, nome: e.target.value }))} />
 			</label>
+			<div className="line-actions">
+				<button type="button" onClick={addLine}>Aggiungi linea</button>
+				<button type="button" className="danger" onClick={removeLine} disabled={!canDeleteLine}>
+					Cancella linea
+				</button>
+			</div>
 		</section>
 	)
 }
 
 function StopsList({
 	current,
+	addStop,
 	removeStop,
 	updateStopName
 }: {
 	current: Line
+	addStop: EditorActions['addStop']
 	removeStop: EditorActions['removeStop']
 	updateStopName: EditorActions['updateStopName']
 }) {
@@ -174,7 +184,64 @@ function StopsList({
 					</div>
 				))}
 			</div>
+			<button type="button" className="stops-add" onClick={addStop}>Aggiungi fermata</button>
 		</section>
+	)
+}
+
+function parsePriceInput(raw: string): number | null {
+	const trimmed = raw.trim().replace(',', '.')
+	if (trimmed === '' || trimmed === '-' || trimmed === '.' || trimmed.endsWith('.')) {
+		return null
+	}
+	const n = Number(trimmed)
+	return Number.isFinite(n) ? n : null
+}
+
+function formatPriceDraft(value: number): string {
+	return String(value)
+}
+
+function PriceCell({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+	const [draft, setDraft] = useState(() => formatPriceDraft(value))
+	const [focused, setFocused] = useState(false)
+
+	useEffect(() => {
+		if (!focused) setDraft(formatPriceDraft(value))
+	}, [value, focused])
+
+	function handleChange(next: string) {
+		setDraft(next)
+		const parsed = parsePriceInput(next)
+		if (parsed !== null) onChange(parsed)
+	}
+
+	function handleBlur() {
+		setFocused(false)
+		const parsed = parsePriceInput(draft)
+		if (parsed === null) {
+			if (draft.trim() === '') {
+				onChange(0)
+				setDraft('0')
+			} else {
+				setDraft(formatPriceDraft(value))
+			}
+			return
+		}
+		onChange(parsed)
+		setDraft(formatPriceDraft(parsed))
+	}
+
+	return (
+		<input
+			className="cell-input"
+			type="text"
+			inputMode="decimal"
+			value={draft}
+			onFocus={() => setFocused(true)}
+			onChange={(e) => handleChange(e.target.value)}
+			onBlur={handleBlur}
+		/>
 	)
 }
 
@@ -197,13 +264,19 @@ function MatrixSection({ title, current, kind, updatePrice, updateCode }: { titl
 								<th title={from}>{row + 1}</th>
 								{current.fermate.map((_, col) => (
 									<td key={`${row}-${col}`}>
-										<input
-											className="cell-input"
-											type={kind === 'price' ? 'number' : 'text'}
-											step={kind === 'price' ? '0.5' : undefined}
-											value={kind === 'price' ? current.prezzi[row][col] : current.codici[row][col]}
-											onChange={(e) => kind === 'price' ? updatePrice(row, col, e.target.value) : updateCode(row, col, e.target.value)}
-										/>
+										{kind === 'price' ? (
+											<PriceCell
+												value={current.prezzi[row][col]}
+												onChange={(next) => updatePrice(row, col, next)}
+											/>
+										) : (
+											<input
+												className="cell-input"
+												type="text"
+												value={current.codici[row][col]}
+												onChange={(e) => updateCode(row, col, e.target.value)}
+											/>
+										)}
 									</td>
 								))}
 							</tr>
@@ -241,13 +314,19 @@ function CompactMatrixSection({
 							{current.fermate.map((to, col) => (
 								<label key={`${row}-${col}`} className="matrix-cell-card">
 									<span title={to}>{col + 1}</span>
-									<input
-										className="cell-input"
-										type={kind === 'price' ? 'number' : 'text'}
-										step={kind === 'price' ? '0.5' : undefined}
-										value={kind === 'price' ? current.prezzi[row][col] : current.codici[row][col]}
-										onChange={(e) => kind === 'price' ? updatePrice(row, col, e.target.value) : updateCode(row, col, e.target.value)}
-									/>
+									{kind === 'price' ? (
+										<PriceCell
+											value={current.prezzi[row][col]}
+											onChange={(next) => updatePrice(row, col, next)}
+										/>
+									) : (
+										<input
+											className="cell-input"
+											type="text"
+											value={current.codici[row][col]}
+											onChange={(e) => updateCode(row, col, e.target.value)}
+										/>
+									)}
 								</label>
 							))}
 						</div>
@@ -263,10 +342,18 @@ function DesktopEditor(props: EditorViewProps) {
 	return (
 		<>
 			<CommonHeader appVersion={props.appVersion} footerLabel={props.footerLabel} />
-			<ActionBar actions={actions} canDeleteLine={data.length > 1} />
+			<ActionBar actions={actions} />
 			<StatusPanel validation={validation} status={status} error={error} />
-			<LineSelector data={data} selectedLine={selectedLine} setSelectedLine={actions.setSelectedLine} withCurrentLine={actions.withCurrentLine} />
-			<StopsList current={current} removeStop={actions.removeStop} updateStopName={actions.updateStopName} />
+			<LineSelector
+				data={data}
+				selectedLine={selectedLine}
+				canDeleteLine={data.length > 1}
+				setSelectedLine={actions.setSelectedLine}
+				withCurrentLine={actions.withCurrentLine}
+				addLine={actions.addLine}
+				removeLine={actions.removeLine}
+			/>
+			<StopsList current={current} addStop={actions.addStop} removeStop={actions.removeStop} updateStopName={actions.updateStopName} />
 			<MatrixSection title="Matrice prezzi" current={current} kind="price" updatePrice={actions.updatePrice} updateCode={actions.updateCode} />
 			<MatrixSection title="Matrice codici" current={current} kind="code" updatePrice={actions.updatePrice} updateCode={actions.updateCode} />
 			<ConfirmDialog confirmDialog={props.confirmDialog} cancelRemoveLine={actions.cancelRemoveLine} confirmRemoveLine={actions.confirmRemoveLine} />
@@ -280,11 +367,19 @@ function TabletEditor(props: EditorViewProps) {
 	return (
 		<>
 			<CommonHeader appVersion={props.appVersion} footerLabel={props.footerLabel} />
-			<ActionBar actions={actions} canDeleteLine={data.length > 1} />
+			<ActionBar actions={actions} />
 			<StatusPanel validation={validation} status={status} error={error} />
 			<section className="tablet-grid">
-				<LineSelector data={data} selectedLine={selectedLine} setSelectedLine={actions.setSelectedLine} withCurrentLine={actions.withCurrentLine} />
-				<StopsList current={current} removeStop={actions.removeStop} updateStopName={actions.updateStopName} />
+				<LineSelector
+					data={data}
+					selectedLine={selectedLine}
+					canDeleteLine={data.length > 1}
+					setSelectedLine={actions.setSelectedLine}
+					withCurrentLine={actions.withCurrentLine}
+					addLine={actions.addLine}
+					removeLine={actions.removeLine}
+				/>
+				<StopsList current={current} addStop={actions.addStop} removeStop={actions.removeStop} updateStopName={actions.updateStopName} />
 			</section>
 			<MatrixSection title="Matrice prezzi" current={current} kind="price" updatePrice={actions.updatePrice} updateCode={actions.updateCode} />
 			<MatrixSection title="Matrice codici" current={current} kind="code" updatePrice={actions.updatePrice} updateCode={actions.updateCode} />
@@ -299,11 +394,19 @@ function MobileEditor(props: EditorViewProps) {
 	return (
 		<>
 			<CommonHeader appVersion={props.appVersion} footerLabel={props.footerLabel} />
-			<ActionBar actions={actions} canDeleteLine={data.length > 1} />
+			<ActionBar actions={actions} />
 			<StatusPanel validation={validation} status={status} error={error} />
 			<section className="mobile-stack">
-				<LineSelector data={data} selectedLine={selectedLine} setSelectedLine={actions.setSelectedLine} withCurrentLine={actions.withCurrentLine} />
-				<StopsList current={current} removeStop={actions.removeStop} updateStopName={actions.updateStopName} />
+				<LineSelector
+					data={data}
+					selectedLine={selectedLine}
+					canDeleteLine={data.length > 1}
+					setSelectedLine={actions.setSelectedLine}
+					withCurrentLine={actions.withCurrentLine}
+					addLine={actions.addLine}
+					removeLine={actions.removeLine}
+				/>
+				<StopsList current={current} addStop={actions.addStop} removeStop={actions.removeStop} updateStopName={actions.updateStopName} />
 				<CompactMatrixSection title="Matrice prezzi" current={current} kind="price" updatePrice={actions.updatePrice} updateCode={actions.updateCode} />
 				<CompactMatrixSection title="Matrice codici" current={current} kind="code" updatePrice={actions.updatePrice} updateCode={actions.updateCode} />
 			</section>

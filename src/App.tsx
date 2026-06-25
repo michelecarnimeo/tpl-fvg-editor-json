@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import demoData from '../database.json'
 import EditorView from './editor/EditorView'
+import { serializeDatabase } from './serializeDatabase'
 import type { DraftData, Line, ValidationResult } from './editorTypes'
 
 const STORAGE_KEY = 'tpl-fvg-editor-json-draft'
@@ -61,7 +62,7 @@ function validateData(lines: Line[]): ValidationResult {
 }
 
 export default function App() {
-  const appVersion = '0.7.0'
+  const appVersion = '0.8.0'
   const [mode, setMode] = useState<'start' | 'editor'>('start')
   const [data, setData] = useState<Line[] | null>(null)
   const [selectedLine, setSelectedLine] = useState(0)
@@ -188,7 +189,7 @@ export default function App() {
 
   function downloadJSON() {
     if (!data) return
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const blob = new Blob([serializeDatabase(data)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -285,12 +286,11 @@ export default function App() {
     })
   }
 
-  function updatePrice(row: number, col: number, value: string) {
-    const n = Number(value)
-    if (Number.isNaN(n)) return
+  function updatePrice(row: number, col: number, value: number) {
+    if (!Number.isFinite(value)) return
     withCurrentLine((line) => {
       const prezzi = line.prezzi.map((r) => [...r])
-      prezzi[row][col] = n
+      prezzi[row][col] = value
       return { ...line, prezzi }
     })
   }

@@ -197,6 +197,18 @@ button:disabled {
 	gap: 0.5rem;
 }
 
+.stops-add {
+	margin-top: 0.75rem;
+	width: 100%;
+}
+
+.line-actions {
+	margin-top: 0.75rem;
+	display: grid;
+	gap: 0.5rem;
+	grid-template-columns: 1fr 1fr;
+}
+
 .stop-row {
 	display: grid;
 	gap: 0.5rem;
