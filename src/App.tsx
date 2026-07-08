@@ -6,8 +6,27 @@ import type { DraftData, Line, ValidationResult } from './editorTypes'
 
 const STORAGE_KEY = 'tpl-fvg-editor-json-draft'
 
+import codePriceMap from './code-price-map.json'
+
+// Estrae la data di aggiornamento (se presente) e la mappa reale codice->prezzo
+const UPDATED_AT: string | null = (codePriceMap as any)?._updated ?? null
+const CODE_PRICE_MAP: Record<string, number> = Object.fromEntries(
+  Object.entries(codePriceMap).filter(([k]) => k !== '_updated')
+) as unknown as Record<string, number>
+
 function cloneData(source: Line[]): Line[] {
   return JSON.parse(JSON.stringify(source)) as Line[]
+}
+
+function cleanCode(code: string): string {
+  if (typeof code !== 'string') return ''
+  let cleaned = code.trim().toUpperCase()
+  cleaned = cleaned.replace(/_/g, ' ') // ZONA_A -> ZONA A
+  // Durante l'editing non forziamo il padding a due cifre: l'utente può digitare E1, E2, ecc.
+  // Rimuoviamo solo spazi e trattini interni per normalizzare la forma ma senza trasformare E1 -> E01.
+  cleaned = cleaned.replace(/\b([A-Z])\s*-\s*([0-9]+)\b/g, (_m, p1, p2) => `${p1}${String(p2)}`)
+  cleaned = cleaned.replace(/\b([A-Z])\s*([0-9]+)\b/g, (_m, p1, p2) => `${p1}${String(p2)}`)
+  return cleaned
 }
 
 function normalizeLine(line: Line): Line {
@@ -22,7 +41,7 @@ function normalizeLine(line: Line): Line {
       const price = line.prezzi?.[r]?.[c]
       const code = line.codici?.[r]?.[c]
       normalizedPrezzi[r][c] = Number.isFinite(price) ? Number(price) : 0
-      normalizedCodici[r][c] = typeof code === 'string' ? code : ''
+      normalizedCodici[r][c] = typeof code === 'string' ? cleanCode(code) : ''
     }
   }
 
@@ -70,6 +89,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<{ show: boolean; lineIndex: number; lineName: string } | null>(null)
   const [hasDraft, setHasDraft] = useState(false)
+  const [showRef, setShowRef] = useState(false)
 
   const current = data ? data[selectedLine] : undefined
 
@@ -172,7 +192,7 @@ export default function App() {
   }
 
   function loadDemo() {
-    const demoNormalized = cloneData(demoData as Line[]).map(normalizeLine)
+    const demoNormalized = cloneData(demoData as unknown as Line[]).map(normalizeLine)
     setData(demoNormalized)
     setSelectedLine(0)
     setError(null)
@@ -298,9 +318,69 @@ export default function App() {
   function updateCode(row: number, col: number, value: string) {
     withCurrentLine((line) => {
       const codici = line.codici.map((r) => [...r])
-      codici[row][col] = value.toUpperCase()
-      return { ...line, codici }
+      const prezzi = line.prezzi.map((r) => [...r])
+      const cleaned = cleanCode(value)
+      codici[row][col] = cleaned
+
+      function lookupPriceForCode(code: string): number | undefined {
+        if (!code) return undefined
+        const key = code.toUpperCase().replace(/\s+/g, '')
+        if (typeof CODE_PRICE_MAP[key] === 'number') return CODE_PRICE_MAP[key]
+        const m = key.match(/^([A-Z])(\d{1})$/)
+        if (m) {
+          const padded = `${m[1]}0${m[2]}`
+          if (typeof CODE_PRICE_MAP[padded] === 'number') return CODE_PRICE_MAP[padded]
+        }
+        return undefined
+      }
+
+      // Se il codice è vuoto oppure non contiene cifre (es. l'utente ha lasciato solo 'E'), azzeriamo il prezzo
+      if (!cleaned || !/\d/.test(cleaned)) {
+        prezzi[row][col] = 0
+      } else {
+        const mapped = lookupPriceForCode(cleaned)
+        if (typeof mapped === 'number') {
+          // Imposta il prezzo solo nella cella corrispondente (non forzare la simmetria dei prezzi)
+          prezzi[row][col] = mapped
+        }
+      }
+
+      return { ...line, codici, prezzi }
     })
+  }
+
+  function ReferenceModal({ open, onClose, map, updated }: { open: boolean; onClose: () => void; map: Record<string, number>; updated?: string | null }) {
+    if (!open) return null
+    return (
+      <div className="dialog-overlay">
+        <div className="dialog-content">
+          <h2>Tabella di riferimento codici → prezzi</h2>
+          {updated && <p>Ultimo aggiornamento: <strong>{updated}</strong></p>}
+          <p>Questa lista viene usata per compilare automaticamente la matrice prezzi quando inserisci un codice.</p>
+          <div style={{ overflow: 'auto', maxHeight: '50vh' }}>
+            <table className="ref-table">
+              <thead>
+                <tr>
+                  <th>Codice</th>
+                  <th>Prezzo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(map).map(([k, v]) => (
+                  <tr key={k}>
+                    <td>{k}</td>
+                    <td>{Number(v).toFixed(2).replace('.', ',')} €</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="dialog-buttons">
+            <button type="button" onClick={onClose}>Chiudi</button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (mode === 'start') {
@@ -309,62 +389,66 @@ export default function App() {
         <div className="bg-shape bg-shape-a" />
         <div className="bg-shape bg-shape-b" />
         <div className="app-container">
-            <header className="hero">
-              <h1>TPL FVG Editor JSON</h1>
-              <p>Carica un file JSON da modificare oppure crea uno nuovo da zero.</p>
-              <div className="hero-badges">
-                <span>Desktop only</span>
-                <span>Salvataggio locale</span>
-                <span>Versione {appVersion}</span>
+          <header className="hero">
+            <h1>TPL FVG Editor JSON</h1>
+            <p>Carica un file JSON da modificare oppure crea uno nuovo da zero.</p>
+            <div className="hero-badges">
+              <span>Desktop only</span>
+              <span>Salvataggio locale</span>
+              <span>Versione {appVersion}</span>
+            </div>
+            <div style={{ marginTop: '0.75rem' }}>
+              <button type="button" onClick={() => setShowRef(true)}>Lista riferimento codici/prezzi</button>
+            </div>
+          </header>
+
+          {error && <section className="panel error">{error}</section>}
+
+          {hasDraft && (
+            <section className="panel draft-banner">
+              <div>
+                <strong>Bozza trovata</strong>
+                <p>Puoi riprendere l'ultimo lavoro salvato in automatico.</p>
               </div>
-            </header>
-
-            {error && <section className="panel error">{error}</section>}
-
-            {hasDraft && (
-              <section className="panel draft-banner">
-                <div>
-                  <strong>Bozza trovata</strong>
-                  <p>Puoi riprendere l'ultimo lavoro salvato in automatico.</p>
-                </div>
-                <div className="draft-actions">
-                  <button type="button" onClick={restoreDraft}>Riprendi bozza</button>
-                  <button type="button" className="danger" onClick={clearDraft}>Elimina bozza</button>
-                </div>
-              </section>
-            )}
-
-            <section className="panel start-screen">
-              <div className="start-option">
-                <h2>Carica un file JSON</h2>
-                <p>Seleziona un database.json dal tuo computer per modificarlo.</p>
-                <label className="file-input-large">
-                  Scegli file...
-                  <input type="file" accept="application/json" onChange={handleFile} />
-                </label>
-              </div>
-
-              <div className="divider">o</div>
-
-              <div className="start-option">
-                <h2>Crea un nuovo file</h2>
-                <p>Inizia da zero con una struttura base di esempio.</p>
-                <button type="button" onClick={createNew} className="btn-large">
-                  Crea nuovo file
-                </button>
-              </div>
-
-              <div className="divider">oppure</div>
-
-              <div className="start-option">
-                <h2>Visualizza una demo</h2>
-                <p>Guarda un esempio di file JSON come riferimento.</p>
-                <button type="button" onClick={loadDemo} className="btn-large">
-                  Modalita demo
-                </button>
+              <div className="draft-actions">
+                <button type="button" onClick={restoreDraft}>Riprendi bozza</button>
+                <button type="button" className="danger" onClick={clearDraft}>Elimina bozza</button>
               </div>
             </section>
+          )}
+
+          <section className="panel start-screen">
+            <div className="start-option">
+              <h2>Carica un file JSON</h2>
+              <p>Seleziona un database.json dal tuo computer per modificarlo.</p>
+              <label className="file-input-large">
+                Scegli file...
+                <input type="file" accept="application/json" onChange={handleFile} />
+              </label>
+            </div>
+
+            <div className="divider">o</div>
+
+            <div className="start-option">
+              <h2>Crea un nuovo file</h2>
+              <p>Inizia da zero con una struttura base di esempio.</p>
+              <button type="button" onClick={createNew} className="btn-large">
+                Crea nuovo file
+              </button>
+            </div>
+
+            <div className="divider">oppure</div>
+
+            <div className="start-option">
+              <h2>Visualizza una demo</h2>
+              <p>Guarda un esempio di file JSON come riferimento.</p>
+              <button type="button" onClick={loadDemo} className="btn-large">
+                Modalita demo
+              </button>
+            </div>
+          </section>
         </div>
+        <ReferenceModal open={showRef} onClose={() => setShowRef(false)} map={CODE_PRICE_MAP} updated={UPDATED_AT} />
       </div>
     )
   }
