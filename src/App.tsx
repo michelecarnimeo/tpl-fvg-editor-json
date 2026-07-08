@@ -81,7 +81,7 @@ function validateData(lines: Line[]): ValidationResult {
 }
 
 export default function App() {
-  const appVersion = '0.8.0'
+  const appVersion = '0.9.0'
   const [mode, setMode] = useState<'start' | 'editor'>('start')
   const [data, setData] = useState<Line[] | null>(null)
   const [selectedLine, setSelectedLine] = useState(0)
