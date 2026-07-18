@@ -81,7 +81,7 @@ function validateData(lines: Line[]): ValidationResult {
 }
 
 export default function App() {
-  const appVersion = '0.9.0'
+  const appVersion = '1.0.0'
   const [mode, setMode] = useState<'start' | 'editor'>('start')
   const [data, setData] = useState<Line[] | null>(null)
   const [selectedLine, setSelectedLine] = useState(0)
@@ -90,6 +90,8 @@ export default function App() {
   const [confirmDialog, setConfirmDialog] = useState<{ show: boolean; lineIndex: number; lineName: string } | null>(null)
   const [hasDraft, setHasDraft] = useState(false)
   const [showRef, setShowRef] = useState(false)
+  const [editMode, setEditMode] = useState<'all' | 'stops' | 'prices' | 'codes'>('all')
+  const [showEditModeDialog, setShowEditModeDialog] = useState(false)
 
   const current = data ? data[selectedLine] : undefined
 
@@ -165,6 +167,7 @@ export default function App() {
         setStatus(`File caricato: ${file.name}`)
         setError(null)
         setMode('editor')
+        setShowEditModeDialog(true)
         setHasDraft(true)
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Errore di lettura file JSON.'
@@ -462,6 +465,24 @@ export default function App() {
       <div className="bg-shape bg-shape-a" />
       <div className="bg-shape bg-shape-b" />
       <div className="app-container">
+        {showEditModeDialog && (
+          <div className="dialog-overlay">
+            <div className="dialog-content">
+              <h2>Scegli cosa modificare</h2>
+              <p>Vuoi modificare solo una parte dei dati o tutto?</p>
+              <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <button className="btn-large" onClick={() => { setEditMode('all'); setShowEditModeDialog(false) }}>Tutto</button>
+                <button className="btn-large" onClick={() => { setEditMode('stops'); setShowEditModeDialog(false) }}>Solo fermate</button>
+                <button className="btn-large" onClick={() => { setEditMode('prices'); setShowEditModeDialog(false) }}>Solo prezzi</button>
+                <button className="btn-large" onClick={() => { setEditMode('codes'); setShowEditModeDialog(false) }}>Solo codici</button>
+              </div>
+              <div className="dialog-buttons" style={{ marginTop: '1rem' }}>
+                <button className="btn-cancel" onClick={() => setShowEditModeDialog(false)}>Annulla</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <EditorView
           appVersion={appVersion}
           data={data ?? []}
@@ -472,6 +493,8 @@ export default function App() {
           validation={validation}
           confirmDialog={confirmDialog}
           footerLabel={saveStatusBadge()}
+          editMode={editMode}
+          setEditMode={setEditMode}
           actions={{
             goBack,
             downloadJSON,
